@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rifas do Big Lu</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0; height: 100%;
+      font-family: Arial, sans-serif;
+      background-color: #363636;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 15px;
+      border-radius: 15px;
+      box-shadow: 0 0 25px rgba(255, 255, 255, 0.5);
+      width: 100%;
+      max-width: 400px;
+      backdrop-filter: blur(5px);
+    }
+    input[type="number"] {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+      background: #333;
+      color: #fff;
+    }
+    button {
+      padding: 10px;
+      margin-top: 10px;
+      font-size: 24px;
+      border: none;
+      border-radius: 8px;
+      background-color: #CD853F;
+      color: #000;
+      cursor: pointer;
+      width: 48%;
+    }
+    button:hover { background-color: #e63e00; }
+    #result {
+      margin-top: 10px;
+      color: #CD853F;
+      font-weight: bold;
+      font-size: 20px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      color: #ccc;
+    }
+    .popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.9);
+      border: 2px solid #CD853F;
+      border-radius: 12px;
+      padding: 20px;
+      color: #CD853F;
+      font-size: 20px;
+      font-weight: bold;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+      z-index: 999;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      width: auto;
+      max-width: 90%;
+    }
+    img.logo {
+      width: 100%;
+      max-width: 200px;
+      display: block;
+      margin: 0 auto 10px;
+      border-radius: 50%;
+      border: none;
+    }
+    .overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 998;
+    }
+    .countdown-number {
+      font-size: 100px;
+      color: #CD853F;
+      animation: grow 0.9s ease-in-out;
+    }
+    @keyframes grow {
+      0% { transform: scale(0.2); opacity: 0; }
+      50% { transform: scale(1.2); opacity: 1; }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img src="big_logo.jpeg" alt="Rifas do Big Lu" class="logo">
+    <p>Defina a quantidade de números e quantos prêmios sorteará:</p>
+    <input type="number" id="min" placeholder="De">
+    <input type="number" id="max" placeholder="Até">
+    <label for="quantity">Quantidade de prêmios a sortear</label>
+    <input type="number" id="quantity" placeholder="-">
+    <label><input type="checkbox" id="noRepeat"> Não repetir os números</label>
+    <div style="display: flex; justify-content: space-between;">
+      <button onclick="sortear()">Sortear</button>
+      <button onclick="limpar()">Limpar</button>
+    </div>
+    <div id="result"></div>
+  </div>
+
+  <script>
+    function exibirPopup(sorted) {
+      const popup = document.createElement("div");
+      popup.className = "popup";
+
+      sorted.forEach((num, i) => {
+        const premio = document.createElement("div");
+        premio.textContent = `${i + 1}º prêmio: ${num}`;
+        popup.appendChild(premio);
+      });
+
+      document.body.appendChild(popup);
+      setTimeout(() => popup.remove(), 5000);
+    }
+
+    function sortear() {
+      const min = parseInt(document.getElementById("min").value);
+      const max = parseInt(document.getElementById("max").value);
+      const quantity = parseInt(document.getElementById("quantity").value);
+      const noRepeat = document.getElementById("noRepeat").checked;
+      const resultDiv = document.getElementById("result");
+
+      if (isNaN(min) || isNaN(max) || isNaN(quantity) || min >= max || quantity < 1) {
+        resultDiv.innerHTML = "Preencha os campos corretamente.";
+        return;
+      }
+
+      const overlay = document.createElement("div");
+      overlay.className = "overlay";
+      document.body.appendChild(overlay);
+
+      let countdown = 5;
+      const interval = setInterval(() => {
+        overlay.innerHTML = `<div class="countdown-number">${countdown}</div>`;
+        countdown--;
+
+        if (countdown < 0) {
+          clearInterval(interval);
+          document.body.removeChild(overlay);
+
+          let sorted = [];
+
+          if (noRepeat) {
+            const totalNumbers = max - min + 1;
+            if (quantity > totalNumbers) {
+              resultDiv.innerHTML = "Impossível sortear essa quantidade sem repetição.";
+              return;
+            }
+
+            let allNumbers = Array.from({ length: totalNumbers }, (_, i) => i + min);
+            for (let i = 0; i < quantity; i++) {
+              const randIndex = Math.floor(Math.random() * allNumbers.length);
+              sorted.push(allNumbers.splice(randIndex, 1)[0]);
+            }
+          } else {
+            for (let i = 0; i < quantity; i++) {
+              sorted.push(Math.floor(Math.random() * (max - min + 1)) + min);
+            }
+          }
+
+          // Exibir no resultado da página
+          resultDiv.innerHTML = `<strong>Números sorteados:</strong><br>${sorted.map((n, i) => `${i + 1}º prêmio: ${n}`).join("<br>")}`;
+
+          // Exibir popup
+          exibirPopup(sorted);
+        }
+      }, 1000);
+    }
+
+    function limpar() {
+      document.getElementById("min").value = "";
+      document.getElementById("max").value = "";
+      document.getElementById("quantity").value = "";
+      document.getElementById("noRepeat").checked = false;
+      document.getElementById("result").innerHTML = "";
+    }
+  </script>
+</body>
+</html>
